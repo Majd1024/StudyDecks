@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>StudyDeck</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <link rel="shortcut icon" href="image.png" type="image/x-icon">
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+
+  <!-- Full-width header (connected with page corners) -->
+  <header id="main-header">
+    <div class="logo-area">
+      <div class="logo-dot"></div>
+      <span class="logo-text">StudyDeck</span>
+    </div>
+
+    <div id="user-bar">
+      <img id="user-photo" src="" alt="User Photo">
+      <span id="user-name"></span>
+      <button id="logout-btn">Sign out</button>
+    </div>
+  </header>
+
+  <!-- Main app container (centered content) -->
+  <div class="app-shell">
+    <!-- Tabs -->
+    <nav id="tabs">
+      <button data-tab="tasks" class="tab-button active">Tasks</button>
+      <button data-tab="flashcards" class="tab-button">Flashcards</button>
+    </nav>
+
+    <!-- Main content -->
+    <main>
+      <section id="content-panel">
+        <div id="tab-container">
+
+          <!-- TASKS TAB -->
+          <div id="tab-tasks" class="tab active">
+            <h2 class="section-title">Tasks</h2>
+            <p class="section-subtitle">
+              Capture what you need to get done today.
+            </p>
+
+            <div class="task-input-row">
+              <input id="new-task-input" type="text" placeholder="New task..." />
+              <button id="add-task-btn" class="primary-btn">Add Task</button>
+            </div>
+
+            <ul id="tasks-list"></ul>
+          </div>
+
+          <!-- FLASHCARDS TAB -->
+          <div id="tab-flashcards" class="tab">
+            <h2 class="section-title">Flashcards</h2>
+            <p class="section-subtitle">
+              Build quick cards and flip them to see the answer.
+            </p>
+
+            <!-- Add Flashcard Form -->
+            <div id="flashcard-add-area" class="flashcard-add">
+              <div class="flashcard-inputs-row">
+                <input id="flash-front" type="text" placeholder="Front (question)">
+                <input id="flash-back" type="text" placeholder="Back (answer)">
+                <button id="add-flashcard-btn" class="primary-btn primary-btn--glow">
+                  Save
+                </button>
+              </div>
+            </div>
+
+            <!-- Flashcards Grid (small flipping cards) -->
+            <div id="flashcard-grid" class="flashcard-grid"></div>
+          </div>
+
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Main app logic -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>

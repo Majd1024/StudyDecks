@@ -1,0 +1,478 @@
+/* =======================================================
+   GLOBAL
+======================================================= */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  background: radial-gradient(circle at top, #020617 0%, #020617 35%, #020617 60%, #000 100%);
+  color: #e5e7eb;
+}
+
+/* Wrapper around content under header */
+.app-shell {
+  width: 100%;
+  max-width: 1120px;
+  margin: 18px auto 40px;
+  padding: 0 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =======================================================
+   HEADER (full width)
+======================================================= */
+#main-header {
+  width: 100%;
+  height: 56px;
+  padding: 0 24px;
+  background: radial-gradient(circle at top left, #020617 0%, #020617 40%, #020617 100%);
+  border-bottom: 1px solid rgba(100, 116, 139, 0.35);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 25% 20%, #60a5fa, #3b82f6 40%, #1d4ed8 85%);
+  box-shadow: 0 0 18px rgba(59, 130, 246, 0.8);
+}
+
+.logo-text {
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  color: #f9fafb;
+}
+
+/* ----- user bar ----- */
+#user-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 14px;
+  background: rgba(15, 23, 42, 0.9);
+  border-radius: 999px;
+  border: 1px solid rgba(100, 116, 139, 0.45);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.7);
+}
+
+#user-photo {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+}
+
+#user-name {
+  font-size: 0.86rem;
+  font-weight: 600;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #e2e8f0;
+}
+
+#logout-btn {
+  background: #ef4444;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  color: #fef2f2;
+  font-size: 0.78rem;
+  font-weight: 500;
+  transition: background 0.18s ease, transform 0.1s ease, box-shadow 0.18s ease;
+}
+
+#logout-btn:hover {
+  background: #dc2626;
+  box-shadow: 0 8px 18px rgba(248, 113, 113, 0.6);
+  transform: translateY(-1px);
+}
+
+/* =======================================================
+   TABS (Tasks / Flashcards)
+======================================================= */
+#tabs {
+  margin: 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(100, 116, 139, 0.55);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+  gap: 4px;
+}
+
+.tab-button {
+  padding: 6px 22px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #cbd5f5;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
+}
+
+.tab-button:hover {
+  color: #e5e7eb;
+}
+
+.tab-button.active {
+  background: #3e6afb;
+  color: #f9fafb;
+  font-weight: 600;
+  box-shadow:
+    0 0 25px rgba(62, 106, 251, 0.6),
+    0 0 60px rgba(62, 106, 251, 0.3);
+  transform: translateY(-1px);
+}
+
+.tab {
+  display: none;
+}
+
+.tab.active {
+  display: block;
+}
+
+/* =======================================================
+   MAIN CONTENT
+======================================================= */
+
+main {
+  flex: 1;
+  display: flex;
+}
+
+#content-panel {
+  width: 100%;
+  margin-top: 22px;
+  padding-bottom: 40px;
+  color: #e5e7eb;
+}
+
+.section-title {
+  font-size: 1.4rem;
+  font-weight: 650;
+  margin-bottom: 4px;
+}
+
+.section-subtitle {
+  font-size: 0.9rem;
+  color: #9ca3af;
+  margin-bottom: 12px;
+}
+
+/* Shared inputs & primary button */
+
+input[type="text"] {
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1px solid #475569;
+  outline: none;
+  font-size: 0.9rem;
+  flex: 1;
+  background: rgba(15, 23, 42, 0.95);
+  color: #e5e7eb;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+input[type="text"]::placeholder {
+  color: #6b7280;
+}
+
+input[type="text"]:focus {
+  border-color: #3e6afb;
+  box-shadow: 0 0 0 1px rgba(62, 106, 251, 0.4);
+  background: rgba(15, 23, 42, 1);
+}
+
+.primary-btn {
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: #3e6afb;
+  color: white;
+  font-weight: 600;
+  font-size: 0.88rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.08s ease;
+}
+
+.primary-btn:hover {
+  background: #3055d9;
+  box-shadow: 0 10px 24px rgba(62, 106, 251, 0.55);
+  transform: translateY(-1px);
+}
+
+.primary-btn--glow {
+  box-shadow:
+    0 0 0 1px rgba(62, 106, 251, 0.4),
+    0 16px 40px rgba(62, 106, 251, 0.65);
+}
+
+/* =======================================================
+   TASKS
+======================================================= */
+
+.task-input-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+#tasks-list {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#tasks-list li {
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid rgba(51, 65, 85, 0.9);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.6);
+}
+
+.delete-task-btn {
+  background: #ef4444;
+  color: #fef2f2;
+  border-radius: 999px;
+  border: none;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s ease, transform 0.08s ease, box-shadow 0.18s ease;
+}
+
+.delete-task-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(248, 113, 113, 0.6);
+}
+
+/* =======================================================
+   FLASHCARD ADD AREA
+======================================================= */
+
+.flashcard-add {
+  margin-top: 6px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px dashed rgba(100, 116, 139, 0.9);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.75);
+}
+
+.flashcard-inputs-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* =======================================================
+   FLASHCARD GRID & CARDS (white cards, flip, glow)
+======================================================= */
+
+.flashcard-grid {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+/* wrapper with perspective */
+.flashcard-card-item {
+  position: relative;
+  perspective: 1000px;
+  height: 150px;
+}
+
+/* inner flippable part */
+.flashcard-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+  transform-style: preserve-3d;
+  transition: transform 0.4s ease, box-shadow 0.2s ease, transform-origin 0.2s ease;
+  box-shadow:
+    0 4px 8px rgba(255, 255, 255, 0.06),
+    0 18px 40px rgba(0, 0, 0, 0.6);
+  background: transparent;
+}
+
+.flashcard-card-item:hover .flashcard-inner {
+  box-shadow:
+    0 0 25px rgba(148, 163, 184, 0.35),
+    0 20px 45px rgba(0, 0, 0, 0.85);
+  transform-origin: center;
+}
+
+.flashcard-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+/* card faces */
+.flashcard-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  padding: 16px 18px 32px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  backface-visibility: hidden;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+/* back side */
+.flashcard-back {
+  transform: rotateY(180deg);
+}
+
+/* small "FRONT / BACK" label */
+.flashcard-label {
+  position: absolute;
+  top: 8px;
+  left: 14px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+
+/* centered big text */
+.flashcard-text {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 500;
+  text-align: center;
+  color: #0f172a;
+  padding: 0 12px;
+  word-break: break-word;
+}
+
+/* =======================================================
+   FLASHCARD ACTION BUTTONS (edit + delete)
+======================================================= */
+
+.flashcard-actions {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  display: flex;
+  gap: 6px;
+}
+
+.flashcard-edit,
+.flashcard-delete {
+  border: none;
+  border-radius: 999px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.08s ease, box-shadow 0.18s ease;
+}
+
+/* edit */
+.flashcard-edit {
+  background: #e0ebff;
+  color: #1d4ed8;
+}
+
+.flashcard-edit:hover {
+  background: #c7d7ff;
+  box-shadow: 0 6px 12px rgba(37, 99, 235, 0.5);
+  transform: translateY(-1px);
+}
+
+/* delete */
+.flashcard-delete {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.flashcard-delete:hover {
+  background: #fecaca;
+  box-shadow: 0 6px 12px rgba(248, 113, 113, 0.6);
+  transform: translateY(-1px);
+}
+
+/* =======================================================
+   UTILITIES & RESPONSIVE
+======================================================= */
+
+.hidden {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .app-shell {
+    padding: 0 16px 24px;
+    margin-top: 10px;
+  }
+
+  #content-panel {
+    margin-top: 16px;
+  }
+
+  .task-input-row,
+  .flashcard-inputs-row {
+    flex-direction: column;
+  }
+
+  #main-header {
+    padding: 0 16px;
+  }
+}
