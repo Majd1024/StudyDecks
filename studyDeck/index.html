@@ -4,14 +4,17 @@
   <meta charset="UTF-8">
   <title>StudyDeck</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- App styles -->
   <link rel="stylesheet" href="style.css">
+
+  <!-- PWA / icon (optional, keep if you use them) -->
   <link rel="shortcut icon" href="image.png" type="image/x-icon">
   <link rel="manifest" href="manifest.json">
-
 </head>
 <body>
 
-  <!-- Full-width header (connected with page corners) -->
+  <!-- Full-width header -->
   <header id="main-header">
     <div class="logo-area">
       <div class="logo-dot"></div>
@@ -25,7 +28,7 @@
     </div>
   </header>
 
-  <!-- Main app container (centered content) -->
+  <!-- Main app container -->
   <div class="app-shell">
     <!-- Tabs -->
     <nav id="tabs">
@@ -71,7 +74,7 @@
               </div>
             </div>
 
-            <!-- Flashcards Grid (small flipping cards) -->
+            <!-- Flashcards Grid -->
             <div id="flashcard-grid" class="flashcard-grid"></div>
           </div>
 
@@ -80,7 +83,7 @@
     </main>
   </div>
 
-  <!-- Main app logic -->
+  <!-- App logic -->
   <script type="module" src="app.js"></script>
 </body>
 </html>
