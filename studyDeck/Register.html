@@ -5,8 +5,8 @@
   <title>StudyDeck – Sign in</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="register.css" />
-      <link rel="manifest" href="manifest.json" />
-    <link rel="shortcut icon" href="image.png" type="image/x-icon" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="shortcut icon" href="image.png" type="image/x-icon" />
 </head>
 <body>
   <!-- Top navigation -->
@@ -22,8 +22,8 @@
       <a href="#about">About</a>
     </nav>
 
-    <!-- Open App as guest -->
-   <!--  <a href="index.html" class="nav-login-btn" id="open-app-link">Open App</a>-->
+    <!-- Open App as guest (currently disabled in your code) -->
+    <!-- <a href="index.html" class="nav-login-btn" id="open-app-link">Open App</a> -->
   </header>
 
   <!-- Hero section -->
@@ -120,16 +120,18 @@
     <p>© <span id="year"></span> StudyDeck. All rights reserved.</p>
   </footer>
 
-  <!-- Firebase v10 modular -->
+  <!-- Firebase v10 modular (redirect-based login) -->
   <script type="module">
     // Footer year
-    document.getElementById("year").textContent = new Date().getFullYear();
+    const yearEl = document.getElementById("year");
+    if (yearEl) yearEl.textContent = new Date().getFullYear();
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import {
       getAuth,
       GoogleAuthProvider,
-      signInWithPopup
+      signInWithRedirect,
+      getRedirectResult
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const firebaseConfig = {
@@ -146,29 +148,38 @@
     const auth = getAuth(app);
     const googleProvider = new GoogleAuthProvider();
 
-    // Google sign-in
     const googleBtn = document.getElementById("google-signin-btn");
-    if (googleBtn) {
-      googleBtn.addEventListener("click", async () => {
-        try {
-          // Clear guest flag if it was set
-          localStorage.removeItem("studydeck_guest");
-          const result = await signInWithPopup(auth, googleProvider);
-          console.log("Signed in as:", result.user?.email);
+    const guestLink = document.getElementById("guest-link");
+    const openAppLink = document.getElementById("open-app-link"); // might be null (commented in HTML)
+
+    // ✅ Handle return from Google (redirect result)
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result && result.user) {
+          console.log("Redirect login success:", result.user.email);
+          // We are logged in → go to main app
           window.location.href = "index.html";
-        } catch (err) {
-          console.error("Google sign-in error:", err);
-          alert("Google sign-in failed: " + err.message);
         }
+      })
+      .catch((err) => {
+        console.error("Google redirect sign-in error:", err);
+        // Optional: show error to user (but avoid spamming if just opened)
+        // alert("Google sign-in failed: " + err.message);
+      });
+
+    // ▶️ Start sign-in with redirect (works better in WebView)
+    if (googleBtn) {
+      googleBtn.addEventListener("click", () => {
+        // Clear guest flag if it was set
+        localStorage.removeItem("studydeck_guest");
+        signInWithRedirect(auth, googleProvider);
       });
     }
 
-    // Guest mode links: set a localStorage flag
-    const guestLink = document.getElementById("guest-link");
-    const openAppLink = document.getElementById("open-app-link");
-
-    function enableGuestMode() {
+    // Guest mode – set flag, then normal link navigation goes to index.html
+    function enableGuestMode(e) {
       localStorage.setItem("studydeck_guest", "1");
+      // no preventDefault: let href navigate to index.html
     }
 
     if (guestLink) {
@@ -180,4 +191,3 @@
   </script>
 </body>
 </html>
-
