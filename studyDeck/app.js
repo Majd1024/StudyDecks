@@ -31,7 +31,7 @@ function setupGuestUI() {
     logoutBtn.textContent = "Back";
     logoutBtn.onclick = () => {
       localStorage.removeItem("studydeck_guest");
-      window.location.href = "Register.html";
+      window.location.href = "Register.html"; // landing page
     };
   }
 }
@@ -73,6 +73,7 @@ onAuthStateChanged(auth, (user) => {
     logoutBtn.onclick = async () => {
       try {
         await signOut(auth);
+        // onAuthStateChanged will redirect back to Register.html
       } catch (err) {
         console.error("Sign-out error:", err);
       }
@@ -183,7 +184,7 @@ function renderFlashcards() {
     inner.appendChild(front);
     inner.appendChild(back);
 
-    // Actions (edit + delete) like chips
+    // Actions (edit + delete)
     const actions = document.createElement("div");
     actions.className = "flashcard-actions";
 
