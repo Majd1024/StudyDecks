@@ -1,85 +1,29 @@
-/* ===== Firebase ===== */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBtXkSiHpAzQUfr6ebTh9DwUgQYihJvJu4",
-  authDomain: "studydeck-e1bc7.firebaseapp.com",
-  projectId: "studydeck-e1bc7",
-  storageBucket: "studydeck-e1bc7.appspot.com",
-  messagingSenderId: "208651535564",
-  appId: "1:208651535564:web:1a4784768cca12110c2e69",
-  measurementId: "G-EPQ9CNKQVN"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-
-/* ===== USER BAR ===== */
+/* ===== USER BAR (no Firebase, simple guest mode) ===== */
 const userPhoto = document.getElementById("user-photo");
 const userName = document.getElementById("user-name");
 const logoutBtn = document.getElementById("logout-btn");
 
-function setupGuestUI() {
-  if (userName) userName.textContent = "Guest";
-  if (userPhoto) userPhoto.style.display = "none";
-  if (logoutBtn) {
-    logoutBtn.textContent = "Back";
-    logoutBtn.onclick = () => {
-      localStorage.removeItem("studydeck_guest");
-      window.location.href = "Register.html"; // landing page
-    };
-  }
+// Show a simple "Guest" user
+if (userName) {
+  userName.textContent = "Guest";
 }
 
-onAuthStateChanged(auth, (user) => {
-  console.log("Auth state:", user);
-  const isGuest = localStorage.getItem("studydeck_guest") === "1";
+if (userPhoto) {
+  // Hide photo if you don't have avatars
+  userPhoto.style.display = "none";
+}
 
-  // Guest mode -> allow without Firebase user
-  if (!user && isGuest) {
-    setupGuestUI();
-    return;
-  }
-
-  // Not guest and not logged in -> back to landing
-  if (!user && !isGuest) {
-    window.location.href = "Register.html";
-    return;
-  }
-
-  // Logged-in user
-  localStorage.removeItem("studydeck_guest");
-
-  if (userName) {
-    userName.textContent = user.displayName?.split(" ")[0] || "User";
-  }
-
-  if (userPhoto) {
-    if (user.photoURL) {
-      userPhoto.src = user.photoURL;
-      userPhoto.style.display = "block";
-    } else {
-      userPhoto.style.display = "none";
+if (logoutBtn) {
+  // Use the button to clear all saved data
+  logoutBtn.textContent = "Clear data";
+  logoutBtn.onclick = () => {
+    const ok = confirm("Do you want to delete all tasks and flashcards?");
+    if (ok) {
+      localStorage.removeItem("studydeck");
+      location.reload();
     }
-  }
-
-  if (logoutBtn) {
-    logoutBtn.textContent = "Sign out";
-    logoutBtn.onclick = async () => {
-      try {
-        await signOut(auth);
-        // onAuthStateChanged will redirect back to Register.html
-      } catch (err) {
-        console.error("Sign-out error:", err);
-      }
-    };
-  }
-});
+  };
+}
 
 /* ===== Local Storage ===== */
 function loadData() {
@@ -101,6 +45,7 @@ const newTaskInput = document.getElementById("new-task-input");
 function renderTasks() {
   if (!tasksList) return;
   tasksList.innerHTML = "";
+
   data.tasks.forEach((task, i) => {
     const li = document.createElement("li");
     li.textContent = task;
