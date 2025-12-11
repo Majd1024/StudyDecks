@@ -4,32 +4,33 @@
   <meta charset="UTF-8">
   <title>StudyDeck</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- App styles -->
   <link rel="stylesheet" href="style.css">
-
-  <!-- PWA / icon (optional, keep if you use them) -->
   <link rel="shortcut icon" href="image.png" type="image/x-icon">
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
 
-  <!-- Full-width header -->
+  <!-- Full-width header (connected with page corners) -->
   <header id="main-header">
     <div class="logo-area">
       <div class="logo-dot"></div>
       <span class="logo-text">StudyDeck</span>
     </div>
 
-
+    <div id="user-bar">
+      <img id="user-photo" src="" alt="User Photo">
+      <span id="user-name"></span>
+      <button id="logout-btn">Sign out</button>
+    </div>
   </header>
 
-  <!-- Main app container -->
+  <!-- Main app container (centered content) -->
   <div class="app-shell">
     <!-- Tabs -->
     <nav id="tabs">
       <button data-tab="tasks" class="tab-button active">Tasks</button>
       <button data-tab="flashcards" class="tab-button">Flashcards</button>
+      <button data-tab="review" class="tab-button">Daily Review</button>
     </nav>
 
     <!-- Main content -->
@@ -46,7 +47,17 @@
 
             <div class="task-input-row">
               <input id="new-task-input" type="text" placeholder="New task..." />
+              <input id="new-task-category" type="text" placeholder="Category (optional)" />
               <button id="add-task-btn" class="primary-btn">Add Task</button>
+            </div>
+
+            <div class="section-subrow">
+              <label class="category-filter-label">
+                Filter:
+                <select id="task-category-filter">
+                  <option value="">All categories</option>
+                </select>
+              </label>
             </div>
 
             <ul id="tasks-list"></ul>
@@ -64,14 +75,70 @@
               <div class="flashcard-inputs-row">
                 <input id="flash-front" type="text" placeholder="Front (question)">
                 <input id="flash-back" type="text" placeholder="Back (answer)">
+                <input id="flash-category" type="text" placeholder="Category (optional)">
                 <button id="add-flashcard-btn" class="primary-btn primary-btn--glow">
                   Save
                 </button>
               </div>
             </div>
 
-            <!-- Flashcards Grid -->
+            <div class="section-subrow">
+              <label class="category-filter-label">
+                Filter:
+                <select id="flashcard-category-filter">
+                  <option value="">All categories</option>
+                </select>
+              </label>
+            </div>
+
+            <!-- Flashcards Grid (small flipping cards) -->
             <div id="flashcard-grid" class="flashcard-grid"></div>
+          </div>
+
+          <!-- DAILY REVIEW TAB -->
+          <div id="tab-review" class="tab">
+            <h2 class="section-title">Daily Review</h2>
+            <p class="section-subtitle">
+              Go through your saved flashcards in one focused session.
+            </p>
+
+            <button id="start-review-btn" class="primary-btn primary-btn--glow">
+              Start Review
+            </button>
+
+            <!-- Reminders -->
+            <div class="reminder-area">
+              <p class="section-subtitle">Reminders</p>
+              <div class="reminder-buttons">
+                <button id="remind-5" class="secondary-btn">
+                  Test in 5 seconds
+                </button>
+                <button id="remind-15" class="secondary-btn">
+                  Remind me in 15 min
+                </button>
+                <button id="remind-60" class="secondary-btn">
+                  Remind me in 1 hour
+                </button>
+              </div>
+              <p class="reminder-hint">
+                Notifications work best when StudyDeck is open as a PWA or tab in the background.
+              </p>
+            </div>
+
+            <div id="review-panel" class="review-panel hidden">
+              <div id="review-meta" class="review-meta"></div>
+
+              <div id="review-content" class="review-content">
+                <!-- Filled dynamically -->
+              </div>
+
+              <div id="review-controls" class="review-controls">
+                <button id="review-done-btn" class="primary-btn">Done / Got it</button>
+                <button id="review-again-btn" class="secondary-btn">Again</button>
+                <button id="review-skip-btn" class="secondary-btn">Skip</button>
+                <button id="review-end-btn" class="danger-btn">End Review</button>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -79,8 +146,7 @@
     </main>
   </div>
 
-  <!-- App logic (no module, no Firebase) -->
-  <script src="app.js"></script>
+  <!-- Main app logic -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>
-
