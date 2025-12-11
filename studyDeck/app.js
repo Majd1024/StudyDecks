@@ -150,35 +150,6 @@ function saveData() {
 
 let data = loadData();
 
-/* ===== Notifications (local reminders) ===== */
-async function scheduleNotification(delayMs, title, body) {
-  if (!("Notification" in window)) {
-    alert("Notifications are not supported on this device/browser.");
-    return;
-  }
-
-  let permission = Notification.permission;
-  if (permission === "default") {
-    permission = await Notification.requestPermission();
-  }
-
-  if (permission !== "granted") {
-    alert("Please allow notifications in your browser to receive reminders.");
-    return;
-  }
-
-  setTimeout(() => {
-    try {
-      new Notification(title, {
-        body,
-        icon: "image.png"
-      });
-    } catch (e) {
-      console.error("Notification error:", e);
-    }
-  }, delayMs);
-}
-
 /* ===== TASKS ===== */
 const tasksList = document.getElementById("tasks-list");
 const addTaskBtn = document.getElementById("add-task-btn");
@@ -530,10 +501,6 @@ const reviewAgainBtn = document.getElementById("review-again-btn");
 const reviewSkipBtn = document.getElementById("review-skip-btn");
 const reviewEndBtn = document.getElementById("review-end-btn");
 
-const remind5Btn = document.getElementById("remind-5");
-const remind15Btn = document.getElementById("remind-15");
-const remind60Btn = document.getElementById("remind-60");
-
 let reviewQueue = [];
 let reviewIndex = 0;
 
@@ -711,40 +678,6 @@ if (reviewSkipBtn) {
 if (reviewEndBtn && reviewPanel) {
   reviewEndBtn.onclick = () => {
     reviewPanel.classList.add("hidden");
-  };
-}
-
-/* ===== REMINDER BUTTONS ===== */
-if (remind5Btn) {
-  remind5Btn.onclick = () => {
-    scheduleNotification(
-      5 * 1000,
-      "StudyDeck – test notification",
-      "This is a 5-second test notification from StudyDeck."
-    );
-    alert("Test reminder set for 5 seconds from now.");
-  };
-}
-
-if (remind15Btn) {
-  remind15Btn.onclick = () => {
-    scheduleNotification(
-      15 * 60 * 1000,
-      "StudyDeck – time to check your cards",
-      "Take a quick 5-minute review of your flashcards."
-    );
-    alert("Reminder set for 15 minutes from now.");
-  };
-}
-
-if (remind60Btn) {
-  remind60Btn.onclick = () => {
-    scheduleNotification(
-      60 * 60 * 1000,
-      "StudyDeck – test yourself",
-      "Time to test yourself with a StudyDeck review session."
-    );
-    alert("Reminder set for 1 hour from now.");
   };
 }
 
