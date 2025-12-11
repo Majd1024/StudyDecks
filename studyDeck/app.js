@@ -1,34 +1,147 @@
-/* ===== USER BAR (no Firebase, simple guest mode) ===== */
+/* ===== Firebase ===== */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBtXkSiHpAzQUfr6ebTh9DwUgQYihJvJu4",
+  authDomain: "studydeck-e1bc7.firebaseapp.com",
+  projectId: "studydeck-e1bc7",
+  storageBucket: "studydeck-e1bc7.appspot.com",
+  messagingSenderId: "208651535564",
+  appId: "1:208651535564:web:1a4784768cca12110c2e69",
+  measurementId: "G-EPQ9CNKQVN"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+/* ===== USER BAR ===== */
 const userPhoto = document.getElementById("user-photo");
 const userName = document.getElementById("user-name");
 const logoutBtn = document.getElementById("logout-btn");
 
-// Show a simple "Guest" user
-if (userName) {
-  userName.textContent = "Guest";
+function setupGuestUI() {
+  if (userName) userName.textContent = "Guest";
+  if (userPhoto) userPhoto.style.display = "none";
+  if (logoutBtn) {
+    logoutBtn.textContent = "Back";
+    logoutBtn.onclick = () => {
+      localStorage.removeItem("studydeck_guest");
+      window.location.href = "Register.html";
+    };
+  }
 }
 
-if (userPhoto) {
-  // Hide photo if you don't have avatars
-  userPhoto.style.display = "none";
-}
+onAuthStateChanged(auth, (user) => {
+  console.log("Auth state:", user);
+  const isGuest = localStorage.getItem("studydeck_guest") === "1";
 
-if (logoutBtn) {
-  // Use the button to clear all saved data
-  logoutBtn.textContent = "Clear data";
-  logoutBtn.onclick = () => {
-    const ok = confirm("Do you want to delete all tasks and flashcards?");
-    if (ok) {
-      localStorage.removeItem("studydeck");
-      location.reload();
+  if (!user && isGuest) {
+    setupGuestUI();
+    return;
+  }
+
+  if (!user && !isGuest) {
+    window.location.href = "Register.html";
+    return;
+  }
+
+  localStorage.removeItem("studydeck_guest");
+
+  if (userName) {
+    userName.textContent = user.displayName?.split(" ")[0] || "User";
+  }
+
+  if (userPhoto) {
+    if (user.photoURL) {
+      userPhoto.src = user.photoURL;
+      userPhoto.style.display = "block";
+    } else {
+      userPhoto.style.display = "none";
     }
+  }
+
+  if (logoutBtn) {
+    logoutBtn.textContent = "Sign out";
+    logoutBtn.onclick = async () => {
+      try {
+        await signOut(auth);
+      } catch (err) {
+        console.error("Sign-out error:", err);
+      }
+    };
+  }
+});
+
+/* ===== Local Storage & Data Model ===== */
+function normalizeData(raw) {
+  const now = Date.now();
+  const data = {
+    tasks: Array.isArray(raw.tasks) ? raw.tasks : [],
+    flashcards: Array.isArray(raw.flashcards) ? raw.flashcards : []
   };
+
+  data.tasks = data.tasks
+    .map((t) => {
+      if (typeof t === "string") {
+        return {
+          text: t,
+          category: "",
+          done: false,
+          createdAt: now
+        };
+      }
+      if (!t || typeof t !== "object") return null;
+      return {
+        text: t.text || "",
+        category: t.category || "",
+        done: !!t.done,
+        createdAt: typeof t.createdAt === "number" ? t.createdAt : now
+      };
+    })
+    .filter(Boolean);
+
+  const oneDay = 24 * 60 * 60 * 1000;
+
+  data.flashcards = data.flashcards
+    .map((c) => {
+      if (!c || typeof c !== "object") return null;
+      return {
+        front: c.front || "",
+        back: c.back || "",
+        category: c.category || "",
+        lastReviewed: typeof c.lastReviewed === "number" ? c.lastReviewed : null,
+        nextReview: typeof c.nextReview === "number" ? c.nextReview : null,
+        interval: typeof c.interval === "number" && c.interval > 0 ? c.interval : oneDay
+      };
+    })
+    .filter((c) => c.front || c.back);
+
+  return data;
 }
 
-/* ===== Local Storage ===== */
 function loadData() {
   const saved = localStorage.getItem("studydeck");
-  return saved ? JSON.parse(saved) : { tasks: [], flashcards: [] };
+  if (!saved) {
+    return {
+      tasks: [],
+      flashcards: []
+    };
+  }
+  try {
+    const parsed = JSON.parse(saved);
+    return normalizeData(parsed);
+  } catch (e) {
+    console.error("Error parsing saved data, resetting.", e);
+    return {
+      tasks: [],
+      flashcards: []
+    };
+  }
 }
 
 function saveData() {
@@ -37,18 +150,118 @@ function saveData() {
 
 let data = loadData();
 
+/* ===== Notifications (local reminders) ===== */
+async function scheduleNotification(delayMs, title, body) {
+  if (!("Notification" in window)) {
+    alert("Notifications are not supported on this device/browser.");
+    return;
+  }
+
+  let permission = Notification.permission;
+  if (permission === "default") {
+    permission = await Notification.requestPermission();
+  }
+
+  if (permission !== "granted") {
+    alert("Please allow notifications in your browser to receive reminders.");
+    return;
+  }
+
+  setTimeout(() => {
+    try {
+      new Notification(title, {
+        body,
+        icon: "image.png"
+      });
+    } catch (e) {
+      console.error("Notification error:", e);
+    }
+  }, delayMs);
+}
+
 /* ===== TASKS ===== */
 const tasksList = document.getElementById("tasks-list");
 const addTaskBtn = document.getElementById("add-task-btn");
 const newTaskInput = document.getElementById("new-task-input");
+const newTaskCategoryInput = document.getElementById("new-task-category");
+const taskCategoryFilter = document.getElementById("task-category-filter");
+
+function getTaskCategories() {
+  const set = new Set();
+  data.tasks.forEach((t) => {
+    if (t.category && t.category.trim()) {
+      set.add(t.category.trim());
+    }
+  });
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+}
+
+function populateTaskCategoryFilter() {
+  if (!taskCategoryFilter) return;
+  const current = taskCategoryFilter.value;
+  const categories = getTaskCategories();
+
+  taskCategoryFilter.innerHTML = "";
+  const optAll = document.createElement("option");
+  optAll.value = "";
+  optAll.textContent = "All categories";
+  taskCategoryFilter.appendChild(optAll);
+
+  categories.forEach((cat) => {
+    const opt = document.createElement("option");
+    opt.value = cat;
+    opt.textContent = cat;
+    taskCategoryFilter.appendChild(opt);
+  });
+
+  if (categories.includes(current)) {
+    taskCategoryFilter.value = current;
+  } else {
+    taskCategoryFilter.value = "";
+  }
+}
 
 function renderTasks() {
   if (!tasksList) return;
   tasksList.innerHTML = "";
 
+  const filterCat = taskCategoryFilter ? taskCategoryFilter.value : "";
+
   data.tasks.forEach((task, i) => {
+    if (filterCat && task.category.trim() !== filterCat) return;
+
     const li = document.createElement("li");
-    li.textContent = task;
+
+    const left = document.createElement("div");
+    left.className = "task-left";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "task-checkbox";
+    checkbox.checked = task.done;
+
+    const textSpan = document.createElement("span");
+    textSpan.className = "task-text";
+    textSpan.textContent = task.text;
+    if (task.done) {
+      textSpan.classList.add("task-text-done");
+    }
+
+    checkbox.onchange = () => {
+      task.done = checkbox.checked;
+      saveData();
+      renderTasks();
+    };
+
+    left.appendChild(checkbox);
+    left.appendChild(textSpan);
+
+    if (task.category && task.category.trim()) {
+      const catPill = document.createElement("span");
+      catPill.className = "task-category-pill";
+      catPill.textContent = task.category;
+      left.appendChild(catPill);
+    }
 
     const del = document.createElement("button");
     del.className = "delete-task-btn";
@@ -57,9 +270,11 @@ function renderTasks() {
     del.onclick = () => {
       data.tasks.splice(i, 1);
       saveData();
+      populateTaskCategoryFilter();
       renderTasks();
     };
 
+    li.appendChild(left);
     li.appendChild(del);
     tasksList.appendChild(li);
   });
@@ -68,28 +283,83 @@ function renderTasks() {
 if (addTaskBtn && newTaskInput) {
   addTaskBtn.onclick = () => {
     const t = newTaskInput.value.trim();
+    const category = newTaskCategoryInput
+      ? newTaskCategoryInput.value.trim()
+      : "";
     if (!t) return;
-    data.tasks.push(t);
+
+    data.tasks.push({
+      text: t,
+      category,
+      done: false,
+      createdAt: Date.now()
+    });
     saveData();
     newTaskInput.value = "";
+    if (newTaskCategoryInput) newTaskCategoryInput.value = "";
+    populateTaskCategoryFilter();
     renderTasks();
   };
 }
 
-renderTasks();
+if (taskCategoryFilter) {
+  taskCategoryFilter.onchange = () => {
+    renderTasks();
+  };
+}
 
-/* ===== FLASHCARDS (flip, edit, delete) ===== */
+/* ===== FLASHCARDS ===== */
 const flashFront = document.getElementById("flash-front");
 const flashBack = document.getElementById("flash-back");
+const flashCategoryInput = document.getElementById("flash-category");
 const addFlashBtn = document.getElementById("add-flashcard-btn");
 const flashGrid = document.getElementById("flashcard-grid");
+const flashCategoryFilter = document.getElementById("flashcard-category-filter");
+
+function getFlashCategories() {
+  const set = new Set();
+  data.flashcards.forEach((c) => {
+    if (c.category && c.category.trim()) {
+      set.add(c.category.trim());
+    }
+  });
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+}
+
+function populateFlashCategoryFilter() {
+  if (!flashCategoryFilter) return;
+  const current = flashCategoryFilter.value;
+  const categories = getFlashCategories();
+
+  flashCategoryFilter.innerHTML = "";
+  const optAll = document.createElement("option");
+  optAll.value = "";
+  optAll.textContent = "All categories";
+  flashCategoryFilter.appendChild(optAll);
+
+  categories.forEach((cat) => {
+    const opt = document.createElement("option");
+    opt.value = cat;
+    opt.textContent = cat;
+    flashCategoryFilter.appendChild(opt);
+  });
+
+  if (categories.includes(current)) {
+    flashCategoryFilter.value = current;
+  } else {
+    flashCategoryFilter.value = "";
+  }
+}
 
 function renderFlashcards() {
   if (!flashGrid) return;
-
   flashGrid.innerHTML = "";
 
+  const filterCat = flashCategoryFilter ? flashCategoryFilter.value : "";
+
   data.flashcards.forEach((card, i) => {
+    if (filterCat && card.category.trim() !== filterCat) return;
+
     const wrapper = document.createElement("div");
     wrapper.className = "flashcard-card-item";
 
@@ -126,10 +396,23 @@ function renderFlashcards() {
     back.appendChild(backLabel);
     back.appendChild(backText);
 
+    // Category pill (both sides)
+    if (card.category && card.category.trim()) {
+      const catFront = document.createElement("div");
+      catFront.className = "flashcard-category-pill";
+      catFront.textContent = card.category;
+      front.appendChild(catFront);
+
+      const catBack = document.createElement("div");
+      catBack.className = "flashcard-category-pill";
+      catBack.textContent = card.category;
+      back.appendChild(catBack);
+    }
+
     inner.appendChild(front);
     inner.appendChild(back);
 
-    // Actions (edit + delete)
+    // Actions
     const actions = document.createElement("div");
     actions.className = "flashcard-actions";
 
@@ -138,17 +421,25 @@ function renderFlashcards() {
     editBtn.textContent = "✎";
 
     editBtn.onclick = (e) => {
-      e.stopPropagation(); // don't flip when editing
-      const newFront = prompt("Edit front:", card.front);
+      e.stopPropagation();
+      const newFront = prompt("Edit front:", card.front ?? "");
       if (newFront === null) return;
-      const newBack = prompt("Edit back:", card.back);
+      const newBack = prompt("Edit back:", card.back ?? "");
       if (newBack === null) return;
+      const newCategory = prompt(
+        "Edit category (optional):",
+        card.category ?? ""
+      );
+      if (newCategory === null) return;
 
       data.flashcards[i] = {
+        ...card,
         front: newFront.trim() || card.front,
-        back: newBack.trim() || card.back
+        back: newBack.trim() || card.back,
+        category: newCategory.trim()
       };
       saveData();
+      populateFlashCategoryFilter();
       renderFlashcards();
     };
 
@@ -157,16 +448,16 @@ function renderFlashcards() {
     delBtn.textContent = "×";
 
     delBtn.onclick = (e) => {
-      e.stopPropagation(); // don't flip when deleting
+      e.stopPropagation();
       data.flashcards.splice(i, 1);
       saveData();
+      populateFlashCategoryFilter();
       renderFlashcards();
     };
 
     actions.appendChild(editBtn);
     actions.appendChild(delBtn);
 
-    // Flip on click
     wrapper.addEventListener("click", () => {
       inner.classList.toggle("flipped");
     });
@@ -181,20 +472,38 @@ if (addFlashBtn && flashFront && flashBack) {
   addFlashBtn.onclick = () => {
     const f = flashFront.value.trim();
     const b = flashBack.value.trim();
+    const category = flashCategoryInput
+      ? flashCategoryInput.value.trim()
+      : "";
     if (!f || !b) return;
 
-    data.flashcards.push({ front: f, back: b });
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    data.flashcards.push({
+      front: f,
+      back: b,
+      category,
+      lastReviewed: null,
+      nextReview: null,
+      interval: oneDay
+    });
     saveData();
 
     flashFront.value = "";
     flashBack.value = "";
+    if (flashCategoryInput) flashCategoryInput.value = "";
+    populateFlashCategoryFilter();
     renderFlashcards();
   };
 }
 
-renderFlashcards();
+if (flashCategoryFilter) {
+  flashCategoryFilter.onchange = () => {
+    renderFlashcards();
+  };
+}
 
-/* ===== Tabs ===== */
+/* ===== TABS ===== */
 document.querySelectorAll(".tab-button").forEach((btn) => {
   btn.onclick = () => {
     document
@@ -210,3 +519,237 @@ document.querySelectorAll(".tab-button").forEach((btn) => {
       .classList.add("active");
   };
 });
+
+/* ===== DAILY REVIEW (flashcards only) ===== */
+const startReviewBtn = document.getElementById("start-review-btn");
+const reviewPanel = document.getElementById("review-panel");
+const reviewMeta = document.getElementById("review-meta");
+const reviewContent = document.getElementById("review-content");
+const reviewDoneBtn = document.getElementById("review-done-btn");
+const reviewAgainBtn = document.getElementById("review-again-btn");
+const reviewSkipBtn = document.getElementById("review-skip-btn");
+const reviewEndBtn = document.getElementById("review-end-btn");
+
+const remind5Btn = document.getElementById("remind-5");
+const remind15Btn = document.getElementById("remind-15");
+const remind60Btn = document.getElementById("remind-60");
+
+let reviewQueue = [];
+let reviewIndex = 0;
+
+function buildReviewQueue() {
+  reviewQueue = [];
+  reviewIndex = 0;
+
+  data.flashcards.forEach((card) => {
+    reviewQueue.push({ type: "flashcard", item: card });
+  });
+}
+
+function updateFlashcardSchedule(card, rating) {
+  const now = Date.now();
+  const oneDay = 24 * 60 * 60 * 1000;
+
+  if (!card.interval || card.interval <= 0) {
+    card.interval = oneDay;
+  }
+
+  if (rating === "good") {
+    card.interval = Math.min(card.interval * 2, 30 * oneDay);
+  } else if (rating === "again") {
+    card.interval = oneDay;
+  }
+
+  card.lastReviewed = now;
+  card.nextReview = now + card.interval;
+}
+
+function showCurrentReviewItem() {
+  if (!reviewPanel || !reviewContent || !reviewMeta) return;
+
+  if (reviewQueue.length === 0) {
+    reviewMeta.innerHTML = `<span>No flashcards to review yet.</span>`;
+    reviewContent.innerHTML = `
+      <div class="review-card-hint">
+        Go to the Flashcards tab and create some cards, then come back here.
+      </div>
+    `;
+    return;
+  }
+
+  const current = reviewQueue[reviewIndex];
+  const total = reviewQueue.length;
+  const positionText = `${reviewIndex + 1} / ${total}`;
+  const typeLabel = "Flashcard";
+
+  reviewMeta.innerHTML = `
+    <span>${positionText}</span>
+    <span class="review-type-pill">${typeLabel}</span>
+  `;
+
+  reviewContent.innerHTML = "";
+
+  const card = current.item;
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "flashcard-card-item";
+
+  const inner = document.createElement("div");
+  inner.className = "flashcard-inner";
+
+  // FRONT
+  const front = document.createElement("div");
+  front.className = "flashcard-face flashcard-front";
+
+  const frontLabel = document.createElement("div");
+  frontLabel.className = "flashcard-label";
+  frontLabel.textContent = "Front";
+
+  const frontText = document.createElement("div");
+  frontText.className = "flashcard-text";
+  frontText.textContent = card.front;
+
+  front.appendChild(frontLabel);
+  front.appendChild(frontText);
+
+  // BACK
+  const back = document.createElement("div");
+  back.className = "flashcard-face flashcard-back";
+
+  const backLabel = document.createElement("div");
+  backLabel.className = "flashcard-label";
+  backLabel.textContent = "Back";
+
+  const backText = document.createElement("div");
+  backText.className = "flashcard-text";
+  backText.textContent = card.back;
+
+  back.appendChild(backLabel);
+  back.appendChild(backText);
+
+  // Category pill (optional) on both sides
+  if (card.category && card.category.trim()) {
+    const catFront = document.createElement("div");
+    catFront.className = "flashcard-category-pill";
+    catFront.textContent = card.category;
+    front.appendChild(catFront);
+
+    const catBack = document.createElement("div");
+    catBack.className = "flashcard-category-pill";
+    catBack.textContent = card.category;
+    back.appendChild(catBack);
+  }
+
+  inner.appendChild(front);
+  inner.appendChild(back);
+  wrapper.appendChild(inner);
+  reviewContent.appendChild(wrapper);
+
+  const hint = document.createElement("div");
+  hint.className = "review-card-hint";
+  hint.textContent = "Tap the card to flip between question and answer.";
+  reviewContent.appendChild(hint);
+
+  wrapper.addEventListener("click", () => {
+    inner.classList.toggle("flipped");
+  });
+}
+
+function goToNextReviewItem() {
+  if (reviewQueue.length === 0) {
+    showCurrentReviewItem();
+    return;
+  }
+  reviewIndex++;
+  if (reviewIndex >= reviewQueue.length) {
+    reviewMeta.innerHTML = `<span>Review finished 🎉</span>`;
+    reviewContent.innerHTML = `
+      <div class="review-card-hint">
+        Nice work! You went through all your flashcards.
+      </div>
+    `;
+    return;
+  }
+  showCurrentReviewItem();
+}
+
+if (startReviewBtn && reviewPanel) {
+  startReviewBtn.onclick = () => {
+    buildReviewQueue();
+    reviewPanel.classList.remove("hidden");
+    showCurrentReviewItem();
+  };
+}
+
+if (reviewDoneBtn) {
+  reviewDoneBtn.onclick = () => {
+    if (reviewQueue.length === 0) return;
+    const current = reviewQueue[reviewIndex];
+    updateFlashcardSchedule(current.item, "good");
+    saveData();
+    goToNextReviewItem();
+  };
+}
+
+if (reviewAgainBtn) {
+  reviewAgainBtn.onclick = () => {
+    if (reviewQueue.length === 0) return;
+    const current = reviewQueue[reviewIndex];
+    updateFlashcardSchedule(current.item, "again");
+    saveData();
+    goToNextReviewItem();
+  };
+}
+
+if (reviewSkipBtn) {
+  reviewSkipBtn.onclick = () => {
+    if (reviewQueue.length === 0) return;
+    goToNextReviewItem();
+  };
+}
+
+if (reviewEndBtn && reviewPanel) {
+  reviewEndBtn.onclick = () => {
+    reviewPanel.classList.add("hidden");
+  };
+}
+
+/* ===== REMINDER BUTTONS ===== */
+if (remind5Btn) {
+  remind5Btn.onclick = () => {
+    scheduleNotification(
+      5 * 1000,
+      "StudyDeck – test notification",
+      "This is a 5-second test notification from StudyDeck."
+    );
+    alert("Test reminder set for 5 seconds from now.");
+  };
+}
+
+if (remind15Btn) {
+  remind15Btn.onclick = () => {
+    scheduleNotification(
+      15 * 60 * 1000,
+      "StudyDeck – time to check your cards",
+      "Take a quick 5-minute review of your flashcards."
+    );
+    alert("Reminder set for 15 minutes from now.");
+  };
+}
+
+if (remind60Btn) {
+  remind60Btn.onclick = () => {
+    scheduleNotification(
+      60 * 60 * 1000,
+      "StudyDeck – test yourself",
+      "Time to test yourself with a StudyDeck review session."
+    );
+    alert("Reminder set for 1 hour from now.");
+  };
+}
+
+/* ===== INITIAL RENDER ===== */
+populateTaskCategoryFilter();
+renderTasks();
+populateFlashCategoryFilter();
+renderFlashcards();
