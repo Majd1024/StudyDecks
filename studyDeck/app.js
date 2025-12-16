@@ -27,29 +27,34 @@ const logoutBtn = document.getElementById("logout-btn");
 function setupGuestUI() {
   if (userName) userName.textContent = "Guest";
   if (userPhoto) userPhoto.style.display = "none";
+
   if (logoutBtn) {
-    logoutBtn.textContent = "Back";
+    // Keep user on index.html (no redirects)
+    logoutBtn.textContent = "Exit guest";
     logoutBtn.onclick = () => {
       localStorage.removeItem("studydeck_guest");
-      window.location.href = "index.html";
+      // No navigation. Just refresh UI state.
+      setupSignedOutUI();
     };
   }
 }
 
-onAuthStateChanged(auth, (user) => {
-  console.log("Auth state:", user);
-  const isGuest = localStorage.getItem("studydeck_guest") === "1";
+function setupSignedOutUI() {
+  // Signed-out state stays on index.html
+  if (userName) userName.textContent = "Guest";
+  if (userPhoto) userPhoto.style.display = "none";
 
-  if (!user && isGuest) {
-    setupGuestUI();
-    return;
+  if (logoutBtn) {
+    logoutBtn.textContent = "Sign in";
+    logoutBtn.onclick = () => {
+      // IMPORTANT: no redirect here.
+      // If you want a login page later, you can add a modal instead.
+      alert("You are in guest mode. No redirects are enabled.");
+    };
   }
+}
 
-  if (!user && !isGuest) {
-    window.location.href = "index.html";
-    return;
-  }
-
+function setupUserUI(user) {
   localStorage.removeItem("studydeck_guest");
 
   if (userName) {
@@ -70,12 +75,35 @@ onAuthStateChanged(auth, (user) => {
     logoutBtn.onclick = async () => {
       try {
         await signOut(auth);
+        // Stay on index.html after sign out:
+        setupSignedOutUI();
       } catch (err) {
         console.error("Sign-out error:", err);
       }
     };
   }
+}
+
+onAuthStateChanged(auth, (user) => {
+  console.log("Auth state:", user);
+
+  const isGuest = localStorage.getItem("studydeck_guest") === "1";
+
+  // ✅ Never redirect anywhere. Always stay on index.html.
+  if (user) {
+    setupUserUI(user);
+    return;
+  }
+
+  if (isGuest) {
+    setupGuestUI();
+    return;
+  }
+
+  // default signed-out state
+  setupSignedOutUI();
 });
+
 
 /* ===== Local Storage & Data Model ===== */
 function normalizeData(raw) {
@@ -337,7 +365,6 @@ function renderFlashcards() {
     const inner = document.createElement("div");
     inner.className = "flashcard-inner";
 
-    // Front
     const front = document.createElement("div");
     front.className = "flashcard-face flashcard-front";
 
@@ -352,7 +379,6 @@ function renderFlashcards() {
     front.appendChild(frontLabel);
     front.appendChild(frontText);
 
-    // Back
     const back = document.createElement("div");
     back.className = "flashcard-face flashcard-back";
 
@@ -367,7 +393,6 @@ function renderFlashcards() {
     back.appendChild(backLabel);
     back.appendChild(backText);
 
-    // Category pill (both sides)
     if (card.category && card.category.trim()) {
       const catFront = document.createElement("div");
       catFront.className = "flashcard-category-pill";
@@ -383,7 +408,6 @@ function renderFlashcards() {
     inner.appendChild(front);
     inner.appendChild(back);
 
-    // Actions
     const actions = document.createElement("div");
     actions.className = "flashcard-actions";
 
@@ -397,10 +421,7 @@ function renderFlashcards() {
       if (newFront === null) return;
       const newBack = prompt("Edit back:", card.back ?? "");
       if (newBack === null) return;
-      const newCategory = prompt(
-        "Edit category (optional):",
-        card.category ?? ""
-      );
+      const newCategory = prompt("Edit category (optional):", card.category ?? "");
       if (newCategory === null) return;
 
       data.flashcards[i] = {
@@ -443,9 +464,7 @@ if (addFlashBtn && flashFront && flashBack) {
   addFlashBtn.onclick = () => {
     const f = flashFront.value.trim();
     const b = flashBack.value.trim();
-    const category = flashCategoryInput
-      ? flashCategoryInput.value.trim()
-      : "";
+    const category = flashCategoryInput ? flashCategoryInput.value.trim() : "";
     if (!f || !b) return;
 
     const oneDay = 24 * 60 * 60 * 1000;
@@ -477,17 +496,11 @@ if (flashCategoryFilter) {
 /* ===== TABS ===== */
 document.querySelectorAll(".tab-button").forEach((btn) => {
   btn.onclick = () => {
-    document
-      .querySelectorAll(".tab-button")
-      .forEach((b) => b.classList.remove("active"));
-    document
-      .querySelectorAll(".tab")
-      .forEach((tab) => tab.classList.remove("active"));
+    document.querySelectorAll(".tab-button").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".tab").forEach((tab) => tab.classList.remove("active"));
 
     btn.classList.add("active");
-    document
-      .getElementById("tab-" + btn.dataset.tab)
-      .classList.add("active");
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
   };
 });
 
@@ -507,7 +520,6 @@ let reviewIndex = 0;
 function buildReviewQueue() {
   reviewQueue = [];
   reviewIndex = 0;
-
   data.flashcards.forEach((card) => {
     reviewQueue.push({ type: "flashcard", item: card });
   });
@@ -544,19 +556,15 @@ function showCurrentReviewItem() {
     return;
   }
 
-  const current = reviewQueue[reviewIndex];
   const total = reviewQueue.length;
   const positionText = `${reviewIndex + 1} / ${total}`;
-  const typeLabel = "Flashcard";
-
   reviewMeta.innerHTML = `
     <span>${positionText}</span>
-    <span class="review-type-pill">${typeLabel}</span>
+    <span class="review-type-pill">Flashcard</span>
   `;
 
   reviewContent.innerHTML = "";
-
-  const card = current.item;
+  const card = reviewQueue[reviewIndex].item;
 
   const wrapper = document.createElement("div");
   wrapper.className = "flashcard-card-item";
@@ -564,7 +572,6 @@ function showCurrentReviewItem() {
   const inner = document.createElement("div");
   inner.className = "flashcard-inner";
 
-  // FRONT
   const front = document.createElement("div");
   front.className = "flashcard-face flashcard-front";
 
@@ -579,7 +586,6 @@ function showCurrentReviewItem() {
   front.appendChild(frontLabel);
   front.appendChild(frontText);
 
-  // BACK
   const back = document.createElement("div");
   back.className = "flashcard-face flashcard-back";
 
@@ -594,7 +600,6 @@ function showCurrentReviewItem() {
   back.appendChild(backLabel);
   back.appendChild(backText);
 
-  // Category pill (optional) on both sides
   if (card.category && card.category.trim()) {
     const catFront = document.createElement("div");
     catFront.className = "flashcard-category-pill";
@@ -651,8 +656,7 @@ if (startReviewBtn && reviewPanel) {
 if (reviewDoneBtn) {
   reviewDoneBtn.onclick = () => {
     if (reviewQueue.length === 0) return;
-    const current = reviewQueue[reviewIndex];
-    updateFlashcardSchedule(current.item, "good");
+    updateFlashcardSchedule(reviewQueue[reviewIndex].item, "good");
     saveData();
     goToNextReviewItem();
   };
@@ -661,8 +665,7 @@ if (reviewDoneBtn) {
 if (reviewAgainBtn) {
   reviewAgainBtn.onclick = () => {
     if (reviewQueue.length === 0) return;
-    const current = reviewQueue[reviewIndex];
-    updateFlashcardSchedule(current.item, "again");
+    updateFlashcardSchedule(reviewQueue[reviewIndex].item, "again");
     saveData();
     goToNextReviewItem();
   };
@@ -686,4 +689,3 @@ populateTaskCategoryFilter();
 renderTasks();
 populateFlashCategoryFilter();
 renderFlashcards();
-
