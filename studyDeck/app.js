@@ -31,7 +31,7 @@ function setupGuestUI() {
     logoutBtn.textContent = "Back";
     logoutBtn.onclick = () => {
       localStorage.removeItem("studydeck_guest");
-      window.location.href = "Register.html";
+      window.location.href = "index.html";
     };
   }
 }
@@ -46,7 +46,7 @@ onAuthStateChanged(auth, (user) => {
   }
 
   if (!user && !isGuest) {
-    window.location.href = "Register.html";
+    window.location.href = "index.html";
     return;
   }
 
@@ -686,3 +686,4 @@ populateTaskCategoryFilter();
 renderTasks();
 populateFlashCategoryFilter();
 renderFlashcards();
+
